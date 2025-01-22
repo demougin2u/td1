@@ -37,6 +37,11 @@ const noteFormView = {
         document
             .getElementById("noteForm")
             .classList.remove("create_edit_note-hidden");
+        document.getElementById("form_add_note_title").value = null;
+        document.getElementById("form_add_note_text").value = null;
+        let validate_button = document.querySelector("#form_add_note_valid");
+        validate_button.removeEventListener("click", noteFormView.update);
+        validate_button.addEventListener("click", noteFormView.validate);
     },
     hide() {
         document
@@ -44,6 +49,7 @@ const noteFormView = {
             .classList.add("create_edit_note-hidden");
     },
     validate() {
+        console.log("validate");
         let titre = document.querySelector("#form_add_note_title").value,
             contenu = document.querySelector("#form_add_note_text").value;
 
@@ -57,9 +63,30 @@ const noteFormView = {
         noteView.display();
         noteFormView.hide();
     },
-    init() {
+    edit() {
+        const note = noteapp.notes.getNoteById(noteapp.currentNoteId);
         let validate_button = document.querySelector("#form_add_note_valid");
-        validate_button.addEventListener("click", noteFormView.validate);
+        document.getElementById("form_add_note_title").value = note.title;
+        document.getElementById("form_add_note_text").value = note.content;
+        validate_button.removeEventListener("click", noteFormView.validate);
+        validate_button.addEventListener("click", noteFormView.update);
+
+        document
+            .getElementById("noteForm")
+            .classList.remove("create_edit_note-hidden");
+    },
+    update() {
+        let titre = document.querySelector("#form_add_note_title").value,
+            contenu = document.querySelector("#form_add_note_text").value;
+
+        const note = new Note(titre, contenu);
+        noteapp.notes.editNote(noteapp.currentNoteId, note);
+
+        let noteView = new NoteView(
+            noteapp.notes.getNoteById(noteapp.currentNoteId)
+        );
+        noteView.display();
+        noteFormView.hide();
     },
 };
 
@@ -67,10 +94,25 @@ const mainMenuView = {
     addHandler(event) {
         noteFormView.display();
     },
+    deleteHandler(event) {
+        noteapp.notes.deleteNote(noteapp.currentNoteId);
+        noteListMenuView.deleteNote(noteapp.currentNoteId);
+        noteapp.currentNoteId = 0;
+    },
+    editHandler(event) {
+        noteFormView.edit();
+    },
     init() {
         document
             .getElementById("add")
             .addEventListener("click", this.addHandler);
+
+        document
+            .getElementById("del")
+            .addEventListener("click", this.deleteHandler);
+        document
+            .getElementById("edit")
+            .addEventListener("click", this.editHandler);
     },
 };
 
@@ -83,6 +125,16 @@ class NoteList {
         this.notes.push(note);
         this.save();
         return this.notes.length - 1;
+    }
+
+    deleteNote(noteId) {
+        this.notes.splice(noteId, 1);
+        this.save();
+    }
+
+    editNote(noteId, note) {
+        this.notes[noteId] = note;
+        this.save();
     }
 
     getNoteById(id) {
@@ -110,12 +162,10 @@ class NoteList {
 }
 
 let noteapp = {
-    currentNote: null,
     currentNoteId: 0,
     notes: new NoteList(),
     init: function () {
         mainMenuView.init();
-        noteFormView.init();
         noteapp.notes.load();
         noteListMenuView.displayList(noteapp.notes.getList());
         document
@@ -129,15 +179,8 @@ let noteapp = {
 
 let noteListMenuView = {
     displayItem: function (note) {
-        let text =
-            note.title +
-            " " +
-            new Intl.DateTimeFormat("fr-FR").format(note.dateCreation);
-
         let noteListElement = document.getElementById("noteListMenu");
-        let div = document.createElement("div");
-        div.textContent = text;
-        div.classList.add("note_list_item", "note_list_item-selected");
+        let div = this.getDivFromNote(note);
 
         noteListElement.childNodes.forEach((element) =>
             element.classList.remove("note_list_item-selected")
@@ -166,6 +209,25 @@ let noteListMenuView = {
 
     displayList: function (notes) {
         notes.forEach((note) => noteListMenuView.displayItem(note));
+    },
+    deleteNote: function (noteId) {
+        let notesElements = document.getElementById("noteListMenu");
+        notesElements.removeChild(notesElements.childNodes[noteId]);
+    },
+    getDivFromNote: function (note) {
+        let text =
+            note.title +
+            " " +
+            new Intl.DateTimeFormat("fr-FR").format(note.dateCreation);
+
+        let div = document.createElement("div");
+        div.textContent = text;
+        div.classList.add("note_list_item", "note_list_item-selected");
+        return div;
+    },
+    editNote: function (noteId, note) {
+        let noteElement =
+            document.getElementById("noteListMenu").childNodes[noteId];
     },
 };
 
