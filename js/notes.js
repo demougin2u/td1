@@ -81,6 +81,7 @@ class NoteList {
 
     addNote(note) {
         this.notes.push(note);
+        this.save();
         return this.notes.length - 1;
     }
 
@@ -91,6 +92,21 @@ class NoteList {
     getList() {
         return this.notes;
     }
+
+    save() {
+        localStorage.setItem("noteList", JSON.stringify(this.notes));
+    }
+
+    load() {
+        this.notes = JSON.parse(localStorage.getItem("noteList")).map(
+            (unformattedNote) =>
+                new Note(
+                    unformattedNote.title,
+                    unformattedNote.content,
+                    new Date(unformattedNote.dateCreation)
+                )
+        );
+    }
 }
 
 let noteapp = {
@@ -100,6 +116,8 @@ let noteapp = {
     init: function () {
         mainMenuView.init();
         noteFormView.init();
+        noteapp.notes.load();
+        noteListMenuView.displayList(noteapp.notes.getList());
         document
             .getElementById("noteListMenu")
             .addEventListener(
@@ -144,6 +162,10 @@ let noteListMenuView = {
                 element.classList.remove("note_list_item-selected");
             }
         });
+    },
+
+    displayList: function (notes) {
+        notes.forEach((note) => noteListMenuView.displayItem(note));
     },
 };
 
