@@ -47,8 +47,13 @@ const noteFormView = {
         let titre = document.querySelector("#form_add_note_title").value,
             contenu = document.querySelector("#form_add_note_text").value;
 
-        noteapp.currentNote = new Note(titre, contenu);
-        let noteView = new NoteView(noteapp.currentNote);
+        const note = new Note(titre, contenu);
+        noteapp.currentNoteId = noteapp.notes.addNote(note);
+        noteListMenuView.displayItem(note);
+
+        let noteView = new NoteView(
+            noteapp.notes.getNoteById(noteapp.currentNoteId)
+        );
         noteView.display();
         noteFormView.hide();
     },
@@ -69,11 +74,73 @@ const mainMenuView = {
     },
 };
 
+class NoteList {
+    constructor() {
+        this.notes = [];
+    }
+
+    addNote(note) {
+        this.notes.push(note);
+        return this.notes.length - 1;
+    }
+
+    getNoteById(id) {
+        return this.notes[id];
+    }
+
+    getList() {
+        return this.notes;
+    }
+}
+
 let noteapp = {
     currentNote: null,
+    currentNoteId: 0,
+    notes: new NoteList(),
     init: function () {
         mainMenuView.init();
         noteFormView.init();
+        document
+            .getElementById("noteListMenu")
+            .addEventListener(
+                "click",
+                noteListMenuView.selectAndDisplayItemNote
+            );
+    },
+};
+
+let noteListMenuView = {
+    displayItem: function (note) {
+        let text = note.title + " " + note.dateCreation.toLocaleDateString();
+
+        let noteListElement = document.getElementById("noteListMenu");
+        let div = document.createElement("div");
+        div.textContent = text;
+        div.classList.add("note_list_item", "note_list_item-selected");
+
+        noteListElement.childNodes.forEach((element) =>
+            element.classList.remove("note_list_item-selected")
+        );
+        noteListElement.append(div);
+    },
+    selectAndDisplayItemNote: function (event) {
+        if (!event.target.classList.contains("note_list_item")) {
+            return;
+        }
+
+        event.currentTarget.childNodes.forEach((element, id) => {
+            if (element === event.target) {
+                noteapp.currentNoteId = id;
+                element.classList.add("note_list_item-selected");
+                let noteView = new NoteView(
+                    noteapp.notes.getNoteById(noteapp.currentNoteId)
+                );
+                noteView.display();
+                noteFormView.hide();
+            } else {
+                element.classList.remove("note_list_item-selected");
+            }
+        });
     },
 };
 
